@@ -1,0 +1,4 @@
+ HMin: 45 HMax: 255
+ SMin: 99 SMax: 186
+ VMin: 111 VMax: 255
+

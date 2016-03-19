@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+project( objDetect )
+find_package( OpenCV REQUIRED )
+add_executable( grabphoto grabphoto.cpp )
+target_link_libraries( grabphoto ${OpenCV_LIBS} )
