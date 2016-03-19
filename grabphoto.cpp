@@ -2,7 +2,7 @@
 //#include <opencv/highgui.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include "opencv2/highgui/highgui.hpp"
+//#include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/objdetect/objdetect.hpp"
 #include <X11/keysym.h>
@@ -23,11 +23,15 @@ int S_MIN = 99;
 int S_MAX = 186;
 int V_MIN = 111;
 int V_MAX = 255;
+//dilation amount
+int dilSize = 21;
+int snapPic = 0;
 
 const char* trackbarWindowName = "Trackbars";
 const char* normPic = "norm";
 const char* hsvPic = "hsv";
 const char * maskPic ="mask";
+const char * dilPic ="dilation";
 
 void trackbarCallback(int pos, void* ptr){
 	
@@ -59,17 +63,21 @@ int main(int argc, char **argv)
 
 	/* Create a window to use for displaying the images */
 	cvNamedWindow(maskPic, 0);
-	cvMoveWindow(maskPic, 200, 200);
+	cvMoveWindow(maskPic, 850, 200);
 
 	/* Create a window to use for displaying the images */
 	cvNamedWindow(hsvPic, 0);
-	cvMoveWindow(hsvPic, 200, 200);
+	cvMoveWindow(hsvPic, 525, 200);
+
+	/* Create a window to use for displaying the images */
+	cvNamedWindow(dilPic, 0);
+	cvMoveWindow(dilPic, 1050, 200);
 
 	//Only for calibration
 	//createTrackbars();
 	/* Display images until the user presses q */
 	while (1) {
-		//grabs picture from cameera
+		//grabs picture from camera
 		cvGrabFrame(cam);
 		IplImage *img = cvRetrieveFrame(cam);
 		CvSize size = cvGetSize(img);
@@ -80,40 +88,73 @@ int main(int argc, char **argv)
 		CvMat *mask = cvCreateMat(size.height, size.width, CV_8UC1);
 		cvInRangeS(hsv, cvScalar(0.11*256, 0.60*256, 0.20*256, 0),
 	                cvScalar(0.14*256, 1.00*256, 1.00*256, 0), mask);
+//unnecessary only for calibration
 //		cvInRangeS(hsv, cvScalar(H_MIN, S_MIN,V_MIN, 0),
  //                       cvScalar(H_MAX, S_MIN, V_MAX, 0), mask);
 
+		//morphological operatioins
+		//Mat *dilDst = CreateMat(size.height, size.width, CV_8UC1);
+		Mat dilDst;
+		CvMat * dilDst2;
+		Mat dilDst3;
+		Mat dilElem = getStructuringElement(MORPH_RECT, Size(2*dilSize +1, 2*dilSize+1), Point(dilSize, dilSize));
+		dilate(cvarrToMat(mask), dilDst, dilElem);
+		//dilDst2 = &CvMat(dilDst);
+		CvMat deprecated(dilDst);
+		dilDst2 = &deprecated;
+		medianBlur(dilDst, dilDst3, 31);	
+//trying another work around
+/*
 	IplConvKernel *se21 = cvCreateStructuringElementEx(21, 21, 10, 10, CV_SHAPE_RECT, NULL);
 	IplConvKernel *se11 = cvCreateStructuringElementEx(11, 11, 5,  5,  CV_SHAPE_RECT, NULL);
-	cvClose(mask, mask, se21); // See completed example for cvClose definition
-	cvOpen(mask, mask, se11);  // See completed example for cvOpen  definition
+	//cvClose(mask, mask, se21); // See completed example for cvClose definition
+	//cvOpen(mask, mask, se11);  // See completed example for cvOpen  definition
 	cvReleaseStructuringElement(&se21);
 	cvReleaseStructuringElement(&se11);
+*/
 	IplImage *hough_in = cvCreateImage(size, 8, 1);
-	cvCopy(mask, hough_in, NULL);
+//	cvCopy(mask, hough_in, NULL);
+	//cvCopy(dilDst2, hough_in, NULL);
+		CvMat deprecated3(dilDst3);
+		CvMat * dilDst3a = &deprecated3;
+	cvCopy(dilDst3a, hough_in, NULL);
         cvSmooth(hough_in, hough_in, CV_GAUSSIAN, 15, 15, 0, 0);
 
 	/* Run the Hough function */
 	CvMemStorage *storage = cvCreateMemStorage(0);
 	CvSeq *circles = cvHoughCircles(hough_in, storage,
 		CV_HOUGH_GRADIENT, 4, size.height/10, 100, 40, 0, 0);
-
+	//adds the circles to the objects
 	int i;
 	for (i = 0; i < circles->total; i++) {
              float *p = (float*)cvGetSeqElem(circles, i);
 	     CvPoint center = cvPoint(cvRound(p[0]),cvRound(p[1]));
-	     CvScalar val = cvGet2D(mask, center.y, center.x);
+	     //CvScalar val = cvGet2D(mask, center.y, center.x);
+	     //CvScalar val = cvGet2D(dilDst2, center.y, center.x);
+	     CvScalar val = cvGet2D(dilDst3a, center.y, center.x);
 	     if (val.val[0] < 1) continue;
              cvCircle(img,  center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
              cvCircle(img,  center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
              cvCircle(mask, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
              cvCircle(mask, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
+//             cvCircle(dilDst2, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
+//             cvCircle(dilDst2, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
+             cvCircle(dilDst3a, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
+             cvCircle(dilDst3a, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
 	}
 
 		//Shows Image
 		cvShowImage(normPic, img);
 		cvShowImage(hsvPic, hsv);
 		cvShowImage(maskPic, mask);
+		//cvShowImage(dilPic, &dilDst);
+		//imshow(dilPic, dilDst);
+		//imshow(dilPic, dilDst3);
+		cvShowImage(dilPic, dilDst3a);
+		if(snapPic == 1){
+			imwrite("tennisball2.jpeg", cvarrToMat(dilDst2));
+			snapPic = 0;
+}
 		
 		if (cvWaitKey(10) == XK_q){
 			//only for callibration
