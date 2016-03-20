@@ -7,8 +7,11 @@
 #include "opencv2/objdetect/objdetect.hpp"
 #include <X11/keysym.h>
 #include <stdio.h>
+#include <iostream>
 
 using namespace cv;
+using namespace std;
+
 //initial min and max HSV filter values.
 //these will be changed using trackbars
 //int H_MIN = 0;
@@ -95,14 +98,14 @@ int main(int argc, char **argv)
 		//morphological operatioins
 		//Mat *dilDst = CreateMat(size.height, size.width, CV_8UC1);
 		Mat dilDst;
-		CvMat * dilDst2;
-		Mat dilDst3;
+		CvMat * dilDstPtr;
+		Mat medBlur;
 		Mat dilElem = getStructuringElement(MORPH_RECT, Size(2*dilSize +1, 2*dilSize+1), Point(dilSize, dilSize));
 		dilate(cvarrToMat(mask), dilDst, dilElem);
-		//dilDst2 = &CvMat(dilDst);
+		//dilDstPtr = &CvMat(dilDst);
 		CvMat deprecated(dilDst);
-		dilDst2 = &deprecated;
-		medianBlur(dilDst, dilDst3, 31);	
+		dilDstPtr = &deprecated;
+		medianBlur(dilDst, medBlur, 31);	
 //trying another work around
 /*
 	IplConvKernel *se21 = cvCreateStructuringElementEx(21, 21, 10, 10, CV_SHAPE_RECT, NULL);
@@ -114,10 +117,10 @@ int main(int argc, char **argv)
 */
 	IplImage *hough_in = cvCreateImage(size, 8, 1);
 //	cvCopy(mask, hough_in, NULL);
-	//cvCopy(dilDst2, hough_in, NULL);
-		CvMat deprecated3(dilDst3);
-		CvMat * dilDst3a = &deprecated3;
-	cvCopy(dilDst3a, hough_in, NULL);
+	//cvCopy(dilDstPtr, hough_in, NULL);
+	CvMat deprecated3(medBlur);
+	CvMat * medBlurPtr = &deprecated3;
+	cvCopy(medBlurPtr, hough_in, NULL);
         cvSmooth(hough_in, hough_in, CV_GAUSSIAN, 15, 15, 0, 0);
 
 	/* Run the Hough function */
@@ -130,29 +133,30 @@ int main(int argc, char **argv)
              float *p = (float*)cvGetSeqElem(circles, i);
 	     CvPoint center = cvPoint(cvRound(p[0]),cvRound(p[1]));
 	     //CvScalar val = cvGet2D(mask, center.y, center.x);
-	     //CvScalar val = cvGet2D(dilDst2, center.y, center.x);
-	     CvScalar val = cvGet2D(dilDst3a, center.y, center.x);
+	     //CvScalar val = cvGet2D(dilDstPtr, center.y, center.x);
+	     CvScalar val = cvGet2D(medBlurPtr, center.y, center.x);
+	     cout<<"X direction: "<<center.x<<" ";
+	     cout<<"Y direction: "<<center.y<<"\n";
 	     if (val.val[0] < 1) continue;
              cvCircle(img,  center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
              cvCircle(img,  center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
              cvCircle(mask, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
              cvCircle(mask, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
-//             cvCircle(dilDst2, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
-//             cvCircle(dilDst2, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
-             cvCircle(dilDst3a, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
-             cvCircle(dilDst3a, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
+//             cvCircle(dilDstPtr, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
+//             cvCircle(dilDstPtr, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
+//             cvCircle(medBlurPtr, center, 3,             CV_RGB(0,255,0), -1, CV_AA, 0);
+//             cvCircle(medBlurPtr, center, cvRound(p[2]), CV_RGB(255,0,0),  3, CV_AA, 0);
 	}
 
 		//Shows Image
 		cvShowImage(normPic, img);
 		cvShowImage(hsvPic, hsv);
 		cvShowImage(maskPic, mask);
-		//cvShowImage(dilPic, &dilDst);
 		//imshow(dilPic, dilDst);
-		//imshow(dilPic, dilDst3);
-		cvShowImage(dilPic, dilDst3a);
+		//imshow(dilPic, medBlur);
+		cvShowImage(dilPic, medBlurPtr);
 		if(snapPic == 1){
-			imwrite("tennisball2.jpeg", cvarrToMat(dilDst2));
+			imwrite("tennisball2.jpeg", cvarrToMat(dilDstPtr));
 			snapPic = 0;
 }
 		
