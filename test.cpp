@@ -7,7 +7,7 @@
 #include <iostream>
 #include <raspicam/raspicam_cv.h>
 #include <ctime>
-
+#include <time.h>
 
 using namespace cv;
 using namespace std;
@@ -24,7 +24,11 @@ int winX = 200;
 
 int main(int argc, char **argv)
 {
-
+  Mat hsv;
+  Mat img;
+  Mat mask;
+  Mat dil;
+  Mat blur;
   /* Start the CV system and get the first v4l camera */
 	//cvInitSystem(argc, argv);
 	//CvCapture *cam = cvCreateCameraCapture(0);
@@ -42,7 +46,7 @@ int main(int argc, char **argv)
   cout<<"Setup Named Windows\n";
 	/* Create a window to use for displaying the images */
 	namedWindow(normPic, 0);
-	moveWindow(normPic, 0*(winX + 25), 200);
+	moveWindow(normPic, 1*(winX + 25), 200);
 
 	// /* Create a window to use for displaying the images */
 	// namedWindow(maskPic, 0);
@@ -62,11 +66,7 @@ int main(int argc, char **argv)
 
   cout<<"Beginning Loop\n";
   while (1) {
-    Mat hsv;
-    Mat img;
-    Mat mask;
-    Mat dil;
-    Mat blur;
+    int t = clock();
     Camera.grab();
     Camera.retrieve(img);
 
@@ -79,6 +79,8 @@ int main(int argc, char **argv)
     //this is for a tennis ball
     inRange(hsv,  Scalar(0.11*256, 0.60*256, 0.20*256, 0),
 	                 Scalar(0.14*256, 1.00*256, 1.00*256, 0), mask);
+//free mem
+    hsv.release();
 
     //dilates the hsv picture to better see the color
     Mat dilElem = getStructuringElement(MORPH_ELLIPSE, Size(2*dilSize +1, 2*dilSize+1), Point(dilSize, dilSize));
@@ -86,12 +88,16 @@ int main(int argc, char **argv)
 
     //blurs it so then it will be easier to detect as a circle
     medianBlur(dil, blur,  31);
+//free mem
+   dil.release();
 
     //finds circles in pictures
 
     vector<Vec3f> circles;
     HoughCircles(blur, circles, CV_HOUGH_GRADIENT,
                  2, blur.rows/4, 200, 100 );
+//free mem
+    blur.release();
 
                  for( size_t i = 0; i < circles.size(); i++ )
              {
@@ -104,7 +110,8 @@ int main(int argc, char **argv)
              }
     // CvSeq *circles = cvHoughCircles(hough_in, storage,
     // 	CV_HOUGH_GRADIENT, 4, size.height/10, 100, 40, 0, 0);
-
+    cout<<(float)(clock() - t)/CLOCKS_PER_SEC<<"\n";
+    cout<<"Showing Image\n";
     //shows the images in the appropriate windows
     imshow(normPic, img);
     // imshow(hsvPic, hsv);
@@ -112,6 +119,7 @@ int main(int argc, char **argv)
     // imshow(dilPic, dil);
     // imshow(blurPic, blur);
 
+    sleep(3);
   }
                                          // Wait for a keystroke in the window
   return 0;

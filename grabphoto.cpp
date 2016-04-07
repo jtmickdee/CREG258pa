@@ -28,7 +28,7 @@ int V_MIN = 111;
 int V_MAX = 255;
 //dilation amount
 int dilSize = 21;
-int snapPic = 0;
+//int snapPic = 0;
 
 const char* trackbarWindowName = "Trackbars";
 const char* normPic = "norm";
@@ -37,7 +37,7 @@ const char * maskPic ="mask";
 const char * dilPic ="dilation";
 
 void trackbarCallback(int pos, void* ptr){
-	
+
 }
 
 void createTrackbars(){
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 		//dilDstPtr = &CvMat(dilDst);
 		CvMat deprecated(dilDst);
 		dilDstPtr = &deprecated;
-		medianBlur(dilDst, medBlur, 31);	
+		medianBlur(dilDst, medBlur, 31);
 //trying another work around
 /*
 	IplConvKernel *se21 = cvCreateStructuringElementEx(21, 21, 10, 10, CV_SHAPE_RECT, NULL);
@@ -155,15 +155,15 @@ int main(int argc, char **argv)
 		//imshow(dilPic, dilDst);
 		//imshow(dilPic, medBlur);
 		cvShowImage(dilPic, medBlurPtr);
-		if(snapPic == 1){
-			imwrite("tennisball2.jpeg", cvarrToMat(dilDstPtr));
-			snapPic = 0;
-}
-		
+// 		if(snapPic == 1){
+// 			imwrite("tennisball2.jpeg", cvarrToMat(dilDstPtr));
+// 			snapPic = 0;
+// }
+
 		if (cvWaitKey(10) == XK_q){
 			//only for callibration
-			//printf("HMin: %d HMax: %d\n SMin: %d SMax: %d\n VMin: %d VMax: %d\n", H_MIN, H_MAX, S_MIN, S_MAX, V_MIN, V_MAX);	
-	
+			//printf("HMin: %d HMax: %d\n SMin: %d SMax: %d\n VMin: %d VMax: %d\n", H_MIN, H_MAX, S_MIN, S_MAX, V_MIN, V_MAX);
+
 			return 0;
 		}
 		//cvReleaseImage(&img);
